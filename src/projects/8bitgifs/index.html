@@ -1,0 +1,136 @@
+{% extends "_project.html" %}
+
+{% block project_name %}8-bit GIF's{% endblock %}
+{% block project_date %}2014{% endblock %}
+
+{% block project_repo %}
+https://github.com/abelnation/8bit-gif-maker
+{% endblock %}
+
+{% block project_links %}
+
+{% markdown %}
+* [IWDRM](http://iwdrm.tumblr.com/)
+* [8-bit Gif Source](https://github.com/abelnation/8bit-gif-maker)
+{% endmarkdown %}
+
+{% endblock %}
+
+{% block project_summary %}
+{% endblock %}
+
+{% block custom_js %}
+<script type="text/javascript">
+  var gifs = [
+    "tumblr_leetnzBPaz1qe0eclo1_r4_250.gif-320x240-10s-10fps.gif",
+    "tumblr_leimctAon91qe0eclo1_r1_250.gif-320x240-10s-10fps.gif",
+    "tumblr_leimnzVGxK1qe0eclo1_r2_250.gif-320x240-10s-10fps.gif",
+    "tumblr_leimsh3O7U1qe0eclo1_r1_250.gif-320x240-10s-10fps.gif",
+    "tumblr_lelvomkjXr1qe0eclo1_r6_250.gif-320x240-10s-10fps.gif",
+    "tumblr_len71dqySF1qe0eclo1_r6_250.gif-320x240-10s-10fps.gif",
+    "tumblr_let12qDTlv1qe0eclo1_r3_250.gif-320x240-10s-10fps.gif",
+    "tumblr_leycugv4UD1qe0eclo1_250.gif-320x240-10s-10fps.gif",
+    "tumblr_lf68p3ZnRN1qe0eclo1_r1_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lfl8geyjXg1qe0eclo1_r6_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lgb02mCfLm1qe0eclo1_r5_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lgno01REKt1qe0eclo1_r13_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lh4pf4myj01qe0eclo1_r2_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lhbz3dSOn41qe0eclo1_r5_250.gif-320x240-10s-10fps.gif",
+    "tumblr_lhdlz6Jkv11qe0eclo1_r6_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lhqpc5J9LK1qe0eclo1_r28_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lhtz58FetW1qe0eclo1_r1_250.gif-320x240-10s-10fps.gif",
+    "tumblr_ligqu6krzj1qe0eclo1_r13_500.gif-320x240-10s-10fps.gif",
+    "tumblr_ljn910Zrhn1qe0eclo1_r3_250.gif-320x240-10s-10fps.gif",
+    "tumblr_lk82o89vSG1qe0eclo1_r7_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lkbvdpiLLQ1qe0eclo1_r8_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lkl1h5R50S1qe0eclo1_r16_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lkontqKgcs1qe0eclo1_r3_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lky5llDXkY1qe0eclo1_500.gif-320x240-10s-10fps.gif",
+    "tumblr_llg4odOzdu1qe0eclo1_r15_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lm6fm8VM4o1qe0eclo1_r8_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lme0c1CoS21qe0eclo1_r10_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lmgy48xPIN1qe0eclo1_r1_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lo6lxsc0pP1qe0eclo1_r13_500.gif-320x240-10s-10fps.gif",
+    "tumblr_loa8s68rcy1qe0eclo1_r1_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lod7if8MFD1qe0eclo1_r7_500.gif-320x240-10s-10fps.gif",
+    "tumblr_loktfjVNF91qe0eclo1_r6_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lop3bpEKPX1qe0eclo1_r4_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lp3zolHalP1qe0eclo1_r17_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lp07qw9hNs1qe0eclo1_r20_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lp74ksI4PD1qe0eclo1_r21_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lpctnhugmT1qe0eclo1_r4_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lpntseQY9Y1qe0eclo1_r14_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lpza6vl5wX1qe0eclo1_r12_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lq4y6n3guV1qe0eclo1_r5_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lqnbpfzff11qe0eclo1_r5_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lr5rs3jvka1qe0eclo1_r4_500.gif-320x240-10s-10fps.gif",
+    "tumblr_lr281mMfFE1qe0eclo1_r6_500.gif-320x240-10s-10fps.gif",
+  ]
+  var curGifIdx = 0
+
+  function advanceGif(delta) {
+    curGifIdx = (curGifIdx + delta) % gifs.length
+    document.getElementById("gif-viewer-img").src = "gifs/" + gifs[curGifIdx]
+  }
+
+  function gifForward() {
+    advanceGif(1)
+  }
+
+  function gifBackward() {
+    advanceGif(-1)
+  }
+
+  advanceGif(0)
+</script>
+{% endblock %}
+
+{% block custom_css %}
+<style>
+
+  #gif-viewer {
+    width : 100%;
+    min-height: 100%;
+    text-align: center;
+    /*padding-bottom: 100%;*/
+  }
+
+  #gif-viewer-img {
+    width: 100%;
+    max-width: 650px;
+  }
+
+  #gif-controls {
+    padding: 10px;
+    text-align: center;
+  }
+
+</style>
+{% endblock %}
+
+{% block project_content %}
+  <div class="row">
+    {% markdown %}
+    Intrigued by the amazing gifs of [IWDRM]("http://iwdrm.tumblr.com/"), I thought
+    it'd be fun to try applying some effects to the creator's already-mesmerizing
+    cinemagraphs.
+
+    The effect is an augmented version of nearest neighbor applied to each frame.
+    The gif's colors are first analyzed, and the top ten are pulled out.  The
+    pixelate effect is then applied to each frame, limiting the colors to the
+    pre-determined set, resulting in a much move "video-gamey" effect than if
+    a standard nearest-neighbor were applied to each frame in isolation.
+    {% endmarkdown %}
+  </div>
+  <div class="row">
+    <div id="gif-controls">
+      <button onclick="gifBackward()"><<</button>
+      <button onclick="gifForward()">>></button>
+    </div>
+  </div>
+  <div class="row">
+    <div id="gif-viewer">
+      <img id="gif-viewer-img" src="" />
+    </div>
+  </div>
+{% endblock %}

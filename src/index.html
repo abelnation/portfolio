@@ -1,0 +1,45 @@
+{% extends "_base.html" %}
+
+{% block content %}
+
+    <!-- columns should be the immediate child of a .row -->
+    <div class="row">
+      {% include "_header.html" %}
+    </div>
+
+    <div class="row">
+      <div class="three columns">
+        <h4>Abel Allison</h4>
+        <ul class="unstyled">
+          <li><a href="https://github.com/abelnation">GitHub</a></li>
+          <li>Code</li>
+          <li>Games</li>
+          <li>Graphics</li>
+          <li>Drones</li>
+        </ul>
+      </div>
+      <div class="nine columns">
+        <div class="projects">
+          <ul class="unstyled">
+            {{ helpers.project_list_item("cli-ck: JS lib for CLI interfaces", "cli-ck") }}
+            {{ helpers.project_list_item("globcp: easily copy file trees", "globcp") }}
+            {{ helpers.project_list_item("SVG Guitar Chord Renderer in JS", "guitar-chord-svg") }}
+            {{ helpers.project_list_item("Chord Calculator", "chord-calculator") }}
+            {{ helpers.project_list_item("8-bit GIF's", "8bitgifs") }}
+            {{ helpers.project_list_item("Quadcopters: a thing I do for fun :)", "drones") }}
+          </ul>
+        </div>
+        <div class=".u-cf"></div>
+
+        <div class="posts">
+          <h2>Posts</h2>
+
+          <ul class="unstyled">
+            {{ helpers.post_list_item("Test Post", "test-post.html") }}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+{% endblock %}
+

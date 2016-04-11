@@ -1,0 +1,74 @@
+
+ul.unstyled, ol.unstyled {
+    list-style:none;
+}
+
+img {
+    max-width: 100%;
+}
+
+//
+// Components
+//
+
+.header {
+    a {
+        color: black;
+    }
+}
+
+.project {
+    position: relative;
+    padding: 0;
+    margin-bottom: 10px;
+    .link {
+
+        top: 0rem;
+        bottom: auto;
+
+        position: absolute;
+        z-index:2;
+
+        width: 100%;
+        padding: 5px 10px;
+
+        font-size: 125%;
+        font-weight: 600;
+        text-decoration: none;
+        border-bottom: thin solid gray;
+
+        background: rgba(0,0,0,0.75);
+        color: white;
+
+        /* Larger than tablet */
+        @media (min-width: 750px) {
+            top: auto;
+            bottom: 1.5rem;
+            width: auto;
+            font-size: 150%;
+
+            border-top: thin solid gray;
+            border-right: thin solid gray;
+        }
+    }
+
+    .image-long {
+        display: none;
+        width: 100%;
+
+        /* Larger than tablet */
+        @media (min-width: 750px) {
+            display: inline;
+        }
+    }
+
+    .image-square {
+        display: inline;
+        width: 100%;
+
+        /* Larger than tablet */
+        @media (min-width: 750px) {
+            display: none;
+        }
+    }
+}

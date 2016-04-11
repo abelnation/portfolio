@@ -1,0 +1,9 @@
+
+# Build
+build
+
+# IntelliJ
+.idea
+
+# Node
+node_modules

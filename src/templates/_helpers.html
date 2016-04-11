@@ -1,0 +1,14 @@
+
+{% macro post_list_item(title, slug) %}
+<li>
+  <a href="/posts/{{ slug }}">{{ title }}</a>
+</li>
+{% endmacro %}
+
+{% macro project_list_item(name, slug) %}
+<li class="project">
+  <a class="link" href="/projects/{{ slug }}">{{ name }}</a>
+  <img class="image-long" src="/projects/{{ slug }}/img/thumb-long.jpg" />
+  <img class="image-square" src="/projects/{{ slug }}/img/thumb-square.jpg" />
+</li>
+{% endmacro %}

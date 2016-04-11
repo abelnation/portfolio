@@ -1,0 +1,32 @@
+{% extends "_base.html" %}
+
+{% block layout_css %}
+<!--<link class="codestyle" rel="stylesheet" href="/css/vendor/solarized-dark.min.css">-->
+<link class="codestyle" rel="stylesheet" href="/css/vendor/monokai-sublime.min.css">
+{% endblock %}
+
+{% block layout_js %}
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
+<script type="text/javascript">
+  hljs.initHighlightingOnLoad()
+</script>
+{% endblock %}
+
+{% block content %}
+
+  <div class="row">
+    {% include "_header.html" %}
+  </div>
+
+  <h1>{% block project_name %}{% endblock %}</h1>
+  <section class="project-motivation">
+    {% block project_summary %}{% endblock %}
+  </section>
+  <section class="project-content">
+    {% block project_content %}{% endblock %}
+  </section>
+  <section class="project-links">
+    <h3>Links:</h3>
+    {% block project_links %}{% endblock %}
+  </section>
+{% endblock %}
