@@ -3,16 +3,35 @@
 {% block project_name %}globcp{% endblock %}
 {% block project_date %}2016{% endblock %}
 
-{% block project_repo %}
-https://github.com/abelnation/globcp
-{% endblock %}
-
-
-{% block project_links %}
-{% endblock %}
-
-{% block project_summary %}
-{% endblock %}
+{% set project_repo_url = "https://github.com/abelnation/globcp" %}
 
 {% block project_content %}
+{% markdown %}
+
+Simple cli util for copying files matching a pattern.  Uses the node package `glob` for path matching.
+
+### Cli Usage
+
+```
+globcp [--flatten] [--srcdir=<srcdir>] <pattern> [<patterns...>] <destdir>
+globcp '**' ./tmp
+globcp '**/*.txt' ./tmp
+globcp --flatten --srcdir=./files '**/*.{jpg,png,gif}' ./images
+```
+
+### API Usage
+
+```
+var Globcp = require('globcp')
+var globcp = new Globcp()
+
+globcp.copyFlat(srcDir, pattern, destDir, done)
+globcp.copyTree(srcDir, pattern, destDir, done)
+```
+
+### Links
+
+* [glob on GitHub](https://github.com/isaacs/node-glob)
+
+{% endmarkdown %}
 {% endblock %}

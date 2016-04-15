@@ -1,0 +1,28 @@
+{% raw %}{% extends "_sketch.html" %}{% endraw %}
+
+{% raw %}{% set sketch_libs %}{% endraw %}
+{% if threejs %}<script type="text/javascript" src="/sketchbook/_lib/three.min.js"></script>{% endif %}
+{% if react %}<script type="text/javascript" src="/sketchbook/_lib/react.js"></script>{% endif %}
+{% raw %}
+{% endset %}{% endraw %}
+
+{% raw %}{% set sketch_source %}{% endraw %}
+<script type="text/javascript">
+  {% if threejs %}{% include "_threejs-starter.js" %}{% endif %}
+</script>
+{% raw %}{% endset %}{% endraw %}
+
+{% raw %}{% block base_content %}
+{% markdown %}
+```javascript
+{{ sketch_source | safe }}
+```
+{% endmarkdown %}
+{% endblock %}{% endraw %}
+
+{% raw %}{% block custom_js %}{% endraw %}
+
+{% raw %}{{ sketch_libs | safe }}{% endraw %}
+{% raw %}{{ sketch_source | safe }}{% endraw %}
+
+{% raw %}{% endblock %}{% endraw %}

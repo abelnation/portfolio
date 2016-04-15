@@ -3,15 +3,62 @@
 {% block project_name %}Dobro Guitar Chord Calculator{% endblock %}
 {% block project_date %}2014{% endblock %}
 
-{% block project_repo %}
-https://github.com/abelnation/dobro-chord-calculator
-{% endblock %}
-
-{% block project_links %}
-{% endblock %}
-
-{% block project_summary %}
-{% endblock %}
+{% set project_repo_url = "https://github.com/abelnation/dobro-chord-calculator" %}
 
 {% block project_content %}
+{% markdown %}
+
+<div style="text-align: center;">
+![Hands playing a dobro guitar](img/1280px-Man_playing_dobro.jpg)
+</div>
+
+One of the tricky things about playing the Dobro slide guitar is knowing what chords are
+possible in any given tuning.  Sure, you can freely slide up and down, playing the chord
+of your tuning in any key, but that gets limiting real fast.
+
+The dobro is not known for it's wealth of teaching materials on the web, so I set
+to write some code to calculate all possible chords you can play in any given tuning.
+
+The goal was to find all chords that can be played with the following constraints:
+
+1. The bar is laid down in a straight line (no angled bar chords)
+2. If barring multiple strings, they must be adjacent, and include the lowest string,
+reflecting the way that the bar is held and used with a standard dobro.
+3. As an exception, the bar may be placed on any *single* string, keeping the others open
+3. The notes may be a subset of a chord, but must have enough color to sound interesting.
+4. All strings need not be played.  As dobro is played with the fingers, you can pluck
+whichever strings you like
+
+The code I wrote calculates all chords for a tuning and provides a nice look-up interface
+to query the results:
+
+```
+dobro> chordsFor('min')
+[ 'Bmin       4x4400  B D F#',
+'Bmin       770x00  B D F#',
+'Bmin       77x700  B D F#',
+'Cmin       x110xx  C D# G',
+'Cminmaj7   x1100x  C D# G B',
+'Dmin       10100xx0  D F A',
+'Dmin       1010x10100  D F A',
+'Emin       90x00x  E G B',
+'Emin       9x900x  E G B',
+'Emin       x5500x  E G B',
+'Emin       xx200x  E G B',
+'G#min      1x110x  G# B D#',
+'G#minmaj7  1x100x  G# B D# G',
+'Gmin       3300x0  G A# D',
+'Gmin       x880x0  G A# D',
+'Gmin       x88x80  G A# D' ]
+
+dobro> chordsFor('7b9')
+[ 'C#7b9      666600  C# D F G# B',
+'G7b9       x66000  G G# B D F' ]
+```
+
+The results are not always the prettiest, as my heuristic for "interesting" chords
+does not always result in harmonically pleasing voicings.  However, it definitely
+gives you a lot of visibility into what's possible with any given tuning you might choose!
+
+{% endmarkdown %}
 {% endblock %}

@@ -1,6 +1,64 @@
 
-ul.unstyled, ol.unstyled {
+ul, ol {
+
+    list-style-position: outside;
+    padding-left: 1em;
+    @media (min-width: 750px) {
+        list-style-position: outside;
+        padding-left: 2em;
+    }
+
+
+    &.unstyled {
+        list-style-position: inside;
+        padding-left: 0;
+
+        list-style-position: inside;
+        list-style:none;
+    }
+
+    &.inline {
+        list-style-position: inside;
+        padding-left: 0;
+
+        list-style:none;
+        li {
+            display: inline-block;
+        }
+
+        li::before {
+            content: " | ";
+        }
+
+        li:first-child::before {
+            content: "";
+        }
+    }
+}
+
+@mixin unstyled-list {
+    list-style-position: inside;
+    padding-left: 0;
+
     list-style:none;
+}
+
+@mixin inline-list($divider: " | ") {
+    list-style-position: inside;
+    padding-left: 0;
+
+    list-style:none;
+    li {
+        display: inline-block;
+    }
+
+    li::before {
+        content: $divider;
+    }
+
+    li:first-child::before {
+        content: "";
+    }
 }
 
 img {
@@ -11,16 +69,71 @@ img {
 // Components
 //
 
-.header {
-    a {
-        color: black;
+.bio {
+    display: none;
+    @media (min-width: 750px) {
+        display: block;
     }
 }
 
-.project {
+// header
+
+.header {
+
+    margin: 1rem 0;
+
+    h1 {
+        font-size: 200%;
+
+        padding-bottom: 0;
+        border-bottom: 2px solid black;
+        line-height: 95%;
+    }
+
+    a {
+        display: inline-block;
+        position: static;
+
+        color: black;
+        text-decoration: none;
+    }
+
+    /* Larger than tablet */
+    @media (min-width: 750px) {
+
+        margin: 1.5rem 0;
+
+        h1 {
+            font-size: 300%;
+        }
+    }
+}
+
+// footer
+
+.footer {
+    text-align: center;
+    padding: 20px 0;
+
+    ul {
+        @include unstyled-list();
+
+        /* Larger than tablet */
+        @media (min-width: 750px) {
+            @include inline-list();
+        }
+    }
+}
+
+// project list item
+
+.project-item {
+
     position: relative;
     padding: 0;
+
     margin-bottom: 10px;
+
     .link {
 
         top: 0rem;
@@ -31,6 +144,7 @@ img {
 
         width: 100%;
         padding: 5px 10px;
+        margin: 0;
 
         font-size: 125%;
         font-weight: 600;
@@ -56,6 +170,8 @@ img {
         display: none;
         width: 100%;
 
+        border: thin solid #dddddd;
+
         /* Larger than tablet */
         @media (min-width: 750px) {
             display: inline;
@@ -70,5 +186,37 @@ img {
         @media (min-width: 750px) {
             display: none;
         }
+    }
+}
+
+// project page
+
+.project-title {
+
+}
+
+// github-banner
+
+.github-banner {
+
+    // only show image for desktop
+    display: none;
+
+    position: fixed;
+    top: 0;
+    right: 0;
+    border: 0;
+
+    /* Larger than tablet */
+    @media (min-width: 750px) {
+        display: inline;
+    }
+}
+
+.github-banner-link {
+    display: inline;
+    /* Larger than tablet */
+    @media (min-width: 750px) {
+        display: none;
     }
 }

@@ -1,0 +1,22 @@
+{% extends "_two-column.html" %}
+
+{% block left_column %}
+
+  {% include "_bio.html" %}
+
+{% endblock %}
+
+{% block right_column %}
+
+<div class="sketches">
+  {% for sketchGroup in sketchGroups %}
+    <h3>{{ sketchGroup }}</h3>
+    <ol class="indented">
+    {% for sketch in sketches[sketchGroup] %}
+      {% include "_sketch-item.html" %}
+    {% endfor %}
+    </ol>
+  {% endfor %}
+</div>
+
+{% endblock %}

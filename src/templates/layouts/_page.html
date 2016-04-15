@@ -1,9 +1,7 @@
 {% extends "_skeleton.html" %}
 
 {% block layout_css %}
-<!-- code syntax highlighting -->
-<!--<link class="codestyle" rel="stylesheet" href="/css/vendor/solarized-dark.min.css">-->
-<link class="codestyle" rel="stylesheet" href="/css/vendor/monokai-sublime.min.css">
+
 {% endblock %}
 
 {% block layout_js %}
@@ -33,8 +31,11 @@
   <section class="project-content">
     {% block project_content %}{% endblock %}
   </section>
-
-  <section class="footer">
-    {% include "_footer.html" %}
+  <section class="project-links">
+    <h3>Links:</h3>
+    {% block project_links %}{% endblock %}
   </section>
+
+</div>
 {% endblock %}
+

@@ -1,1 +1,11 @@
-{% extends "_base.html" %}
+{% extends "_skeleton.html" %}
+
+{% block content %}
+
+  <h1 class="project-title">
+    {% block post_title %}{% endblock %}
+  </h1>
+  <div class="post-date">{% block post_date %}{% endblock %}</div>
+  <div class="post-content">{% block post_content %}{% endblock %}</div>
+
+{% endblock %}

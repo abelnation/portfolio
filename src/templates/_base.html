@@ -13,6 +13,7 @@
 
     <link rel="stylesheet" href="/css/normalize.css" media="all">
     <link rel="stylesheet" href="/css/skeleton.css" media="all">
+
     <link rel="stylesheet" href="/css/styles.css" media="all">
 
     {% block layout_css %}{% endblock %}
@@ -24,10 +25,7 @@
         <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
     <![endif]-->
 
-    <!-- .container is main centered wrapper -->
-    <div class="container">
-      {% block content %}{% endblock %}
-    </div>
+    {% block base_content %}{% endblock %}
 
     {% if env.dev %}
     <script>
@@ -38,7 +36,5 @@
 
     {% block layout_js %}{% endblock %}
     {% block custom_js %}{% endblock %}
-
-    <script src="/js/main.js"></script>
   </body>
 </html>

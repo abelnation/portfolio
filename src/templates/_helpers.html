@@ -1,14 +1,31 @@
 
+
+{# Posts #}
+{# ===== #}
+
 {% macro post_list_item(title, slug) %}
-<li>
-  <a href="/posts/{{ slug }}">{{ title }}</a>
-</li>
+  <li>
+    <a href="/posts/{{ slug }}">{{ title }}</a>
+  </li>
 {% endmacro %}
 
+{% macro post_page(title, slug, date) %}
+  {% block post_title %}{{ title }}{% endblock %}
+  {% block post_date %}{{ date }}{% endblock %}
+
+  {% block post_content %}{{ caller() }}{% endblock %}
+{% endmacro %}
+
+{# Projects #}
+{# ======== #}
+
 {% macro project_list_item(name, slug) %}
-<li class="project">
-  <a class="link" href="/projects/{{ slug }}">{{ name }}</a>
-  <img class="image-long" src="/projects/{{ slug }}/img/thumb-long.jpg" />
-  <img class="image-square" src="/projects/{{ slug }}/img/thumb-square.jpg" />
-</li>
+  {% include "_project-item.html" %}
+{% endmacro %}
+
+{# Sketchbook #}
+{# ========== #}
+
+{% macro sketch_list_item(name, path) %}
+  {% include "_sketch-item.html" %}
 {% endmacro %}

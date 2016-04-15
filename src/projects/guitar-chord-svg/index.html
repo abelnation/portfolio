@@ -3,14 +3,13 @@
 {% block project_name %}JS SVG Chord Renderer{% endblock %}
 {% block project_date %}2013{% endblock %}
 
-{% block project_repo %}
-https://github.com/abelnation/chordmaker/
-{% endblock %}
+{% set project_repo_url = "https://github.com/abelnation/chordmaker/" %}
 
-{% block project_links %}
-{% endblock %}
-
-{% block project_summary %}
+{% block custom_js %}
+<script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
+<script type="text/javascript" src="js/underscore-min.js"></script>
+<script type="text/javascript" src="js/raphael-min.js"></script>
+<script type="text/javascript" src="js/chordmaker.min.js"></script>
 {% endblock %}
 
 {% block project_content %}
@@ -21,7 +20,10 @@ diagrams for scales, arpeggios, and multiple chord shapes (e.g. the CAGED system
 The library is based on the Raphael SVG library, which makes the diagrams really easy
 to manipulate after they are initially rendered.
 
-![Alt text](img/tumblr_mbqrmug2AM1rih1kwo1_1280.png)
+* [Chord Quiz Mobile web app](http://groovemechanic.net/chordmaker/dev/demo/mquiz.html)
+* [Chord catalogue demo](http://groovemechanic.net/chordmaker/dev/demo/catalogue.html)
+
+![Various C chord diagrams](img/tumblr_mbqrmug2AM1rih1kwo1_1280.png)
 
 I’ll admit it. There isn’t that much novel about writing a library to render guitar
 chords. Many have done it before. I realized, while trying to get a bunch of chords
@@ -30,14 +32,14 @@ those posters full of chords. You have to put them into context and actually use
 That’s when you really free your mind of where your fingers are going and you level
 up to thinking about how to use the chord itself.
 
-![Alt text](img/tumblr_mbqrmug2AM1rih1kwo4_500.png)
+![Example code usage](img/tumblr_mbqrmug2AM1rih1kwo4_500.png)
 
 Realizing this, I wanted to find a way to get the right chords in front of your face
 to fit your context, and that doesn’t come easy with a book, or a chord index.
 For any given song, you only need a few chords, but that collection totally depends
 on the context.
 
-![Alt text](img/tumblr_mbqrmug2AM1rih1kwo3_1280.png)
+![Interactive scale renderer](img/tumblr_mbqrmug2AM1rih1kwo3_1280.png)
 
 The point is, I wanted to make it super simple for anyone to write content that needs
 chord diagrams, and that requires a simple API. So I experimented with a few different

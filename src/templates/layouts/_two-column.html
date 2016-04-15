@@ -1,0 +1,29 @@
+{% extends "_skeleton.html" %}
+
+{% block content %}
+
+  <!-- columns should be the immediate child of a .row -->
+  <div class="row">
+    {% block header %}
+      {% include "_header.html" %}
+    {% endblock %}
+  </div>
+
+  <div class="row">
+    <div class="three columns">
+      {% block left_column %}
+      {% endblock %}
+    </div>
+    <div class="nine columns">
+      {% block right_column %}
+      {% endblock %}
+    </div>
+  </div>
+
+  <div class="row">
+    {% block footer %}
+      {% include "_footer.html" %}
+    {% endblock %}
+  </div>
+
+{% endblock %}
