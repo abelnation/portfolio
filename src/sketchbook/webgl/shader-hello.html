@@ -1,0 +1,80 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+{% endset %}
+
+{% set sketch_source %}
+<script type="x-shader/x-vertex" id="hello-vertex-shader">
+  attribute vec2 a_position;
+  void main() {
+     gl_Position = vec4(a_position, 0, 1);
+  }
+</script>
+<script type="x-shader/x-fragment" id="hello-fragment-shader">
+  void main() {
+    gl_FragColor = vec4(0,1,0,1); // green
+  }
+</script>
+<script type="text/javascript">
+  var gl
+
+  function start() {
+    gl = createContext(500, 500)
+
+    // setup a GLSL program
+    var program = createProgramFromScripts(gl, [
+      "hello-vertex-shader",
+      "hello-fragment-shader"
+    ]);
+    gl.useProgram(program);
+
+    // look up where the vertex data needs to go.
+    var positionLocation = gl.getAttribLocation(program, "a_position");
+
+    // clear screen
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    var VEC_DIM = 2
+
+    var RECT_VERTICES = [
+      -1.0, -1.0,
+      1.0, -1.0,
+      -1.0,  1.0,
+      -1.0,  1.0,
+      1.0, -1.0,
+      1.0,  1.0
+    ]
+
+    var TRIANGLE_VERTICES = [
+      -0.5, -0.5,
+       0.5, -0.5,
+       0.0,  0.5,
+    ]
+
+    var vertices = TRIANGLE_VERTICES
+
+    // Create a buffer and put a single clipspace rectangle in
+    // it (2 triangles)
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      //new Float32Array(RECT_VERTICES),
+      new Float32Array(vertices),
+      gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, VEC_DIM, gl.FLOAT, false, 0, 0);
+
+    // draw
+    gl.drawArrays(gl.TRIANGLES, 0, vertices.length / VEC_DIM);
+  }
+
+start()
+</script>
+{% endset %}
+
+

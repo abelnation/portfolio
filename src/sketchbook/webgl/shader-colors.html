@@ -1,0 +1,79 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>{% endset %}
+
+{% set sketch_source %}
+<script type="x-shader/x-vertex" id="hello-vertex-shader">
+  attribute vec3 a_position;
+  attribute vec4 a_color;
+
+  varying lowp vec4 vColor;
+
+  void main() {
+     gl_Position = vec4(a_position, 1);
+     vColor = a_color;
+  }
+</script>
+<script type="x-shader/x-fragment" id="hello-fragment-shader">
+  varying lowp vec4 vColor;
+  void main() {
+    gl_FragColor = vColor;
+  }
+</script>
+{% endset %}
+{% set sketch_source_js %}
+
+  var gl
+
+  function start() {
+    gl = createContext(500, 500)
+
+    // setup a GLSL program
+    var program = createProgramFromScripts(gl, [
+      "hello-vertex-shader",
+      "hello-fragment-shader"
+    ]);
+    gl.useProgram(program);
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    // look up where the vertex and color data needs to go.
+    var positionLocation = gl.getAttribLocation(program, "a_position");
+    var colorLocation = gl.getAttribLocation(program, "a_color");
+
+    var vertexDim = 3
+    var vertices = [
+      -0.5, -0.5, 0.0,
+       0.5, -0.5, 0.0,
+       0.0,  0.5, 0.0
+    ]
+    var numVertices = vertices.length / vertexDim
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(positionLocation);
+    gl.vertexAttribPointer(positionLocation, vertexDim, gl.FLOAT, false, 0, 0);
+
+    var colorDim = 4
+    var colors = [
+      1.0, 0.0, 0.0, 1.0,
+      0.0, 1.0, 0.0, 1.0,
+      0.0, 0.0, 1.0, 1.0
+    ]
+    var colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(colorLocation);
+    gl.vertexAttribPointer(colorLocation, colorDim, gl.FLOAT, false, 0, 0);
+
+    // draw
+    gl.drawArrays(gl.TRIANGLES, 0, numVertices);
+  }
+
+  start()
+
+{% endset %}

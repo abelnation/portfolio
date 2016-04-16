@@ -14,4 +14,33 @@
 {% endblock %}
 
 {% block base_content %}
+{% if sketch_source_js %}
+
+{% markdown %}
+```js
+{{ sketch_source_js | safe }}
+```
+{% endmarkdown %}
+
+{% else %}
+
+{% markdown %}
+```js
+{{ sketch_source | safe }}
+```
+{% endmarkdown %}
+
+{% endif %}
+{% endblock %}
+
+{% block custom_js %}
+
+{{ sketch_libs | safe }}
+{{ sketch_source | safe }}
+{% if sketch_source_js %}
+<script type="text/javascript">
+  {{ sketch_source_js | safe }}
+</script>
+{% endif %}
+
 {% endblock %}

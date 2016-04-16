@@ -1,0 +1,46 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+{% endset %}
+
+{% set sketch_source %}
+<script type="text/javascript">
+  (function() {
+    var gl
+
+    function createContext(w, h) {
+      console.log('creating webgl context...')
+
+      // dom element
+      var canvas = document.createElement('canvas')
+      // webgl context
+      var ctx = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+
+      if (!ctx) {
+        throw new Error('Unable to initialize WebGL context')
+      }
+
+      canvas.style.width = w
+      canvas.style.height = h
+
+      ctx.viewportWidth = w
+      ctx.viewportHeight = h
+
+      document.body.insertBefore( canvas, document.body.firstChild )
+
+      return ctx
+    }
+
+    function start() {
+      gl = createContext(500, 500)
+
+      gl.clearColor(0.0, 0.0, 0.0, 1.0)
+      gl.enable(gl.DEPTH_TEST)
+      gl.depthFunc(gl.LEQUAL)
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    }
+
+    start()
+  })()
+</script>
+{% endset %}
