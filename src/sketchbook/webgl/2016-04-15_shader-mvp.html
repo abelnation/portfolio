@@ -3,24 +3,28 @@
 {% set sketch_libs %}
 <script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
 <script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
 {% endset %}
 
 {% set sketch_source_other %}
-<script type="x-shader/x-vertex" id="hello-vertex-shader">
+<script type="x-shader/x-vertex" id="mvp-color-vertex-shader">
   attribute vec3 a_position;
   attribute vec4 a_color;
 
-  uniform mat4 uMVMatrix;
-  uniform mat4 uPMatrix;
-
   varying lowp vec4 vColor;
 
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCamMatrix;
+  uniform mat4 uPMatrix;
+
   void main() {
-     gl_Position = uPMatrix * uMVMatrix * vec4(a_position, 1);
+     gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(a_position, 1);
      vColor = a_color;
   }
 </script>
-<script type="x-shader/x-fragment" id="hello-fragment-shader">
+<script type="x-shader/x-fragment" id="varying-color-fragment-shader">
   varying lowp vec4 vColor;
   void main() {
     gl_FragColor = vColor;
@@ -30,174 +34,258 @@
 
 {% set sketch_source_js %}
 <script type="text/javascript">
-var gl
-var program
 
-var positionLocation
-var colorLocation
-
-var pMatrixUniform
-var mvMatrixUniform
-
-var eyeVec3
-var eyeRotMatrix
-
-var pMatrix
-var mvMatrix
-
-var vertexDim = 3
-var vertices = [
-  -0.5,-0.5,-0.5, // triangle 1 : begin
-  -0.5,-0.5, 0.5,
-  -0.5, 0.5, 0.5, // triangle 1 : end
-   0.5, 0.5,-0.5, // triangle 2 : begin
-  -0.5,-0.5,-0.5,
-  -0.5, 0.5,-0.5, // triangle 2 : end
-
-   0.5,-0.5, 0.5,
-  -0.5,-0.5,-0.5,
-   0.5,-0.5,-0.5,
-   0.5, 0.5,-0.5,
-   0.5,-0.5,-0.5,
-  -0.5,-0.5,-0.5,
-
-  -0.5,-0.5,-0.5,
-  -0.5, 0.5, 0.5,
-  -0.5, 0.5,-0.5,
-   0.5,-0.5, 0.5,
-  -0.5,-0.5, 0.5,
-  -0.5,-0.5,-0.5,
-
-  -0.5, 0.5, 0.5,
-  -0.5,-0.5, 0.5,
-   0.5,-0.5, 0.5,
-   0.5, 0.5, 0.5,
-   0.5,-0.5,-0.5,
-   0.5, 0.5,-0.5,
-
-   0.5,-0.5,-0.5,
-   0.5, 0.5, 0.5,
-   0.5,-0.5, 0.5,
-   0.5, 0.5, 0.5,
-   0.5, 0.5,-0.5,
-  -0.5, 0.5,-0.5,
-
-   0.5, 0.5, 0.5,
-  -0.5, 0.5,-0.5,
-  -0.5, 0.5, 0.5,
-   0.5, 0.5, 0.5,
-  -0.5, 0.5, 0.5,
-   0.5,-0.5, 0.5
-]
-
-var numVertices = vertices.length / vertexDim
-var vertexBuffer
-
-var colorDim = 4
-var colors = []
-for (var i = 0; i < numVertices; i++) {
-  colors.push(vertices[(i*3)] > 0 ? 1.0 : 0.0)
-  colors.push(vertices[(i*3)+1] > 0 ? 1.0 : 0.0)
-  colors.push(vertices[(i*3)+2] > 0 ? 1.0 : 0.0)
-  colors.push(1.0) // alpha
-}
-var numColors = colors.length / colorDim
-var colorBuffer
-
-console.log('vertices: ' + numVertices + ' colors: ' + numColors)
-
-var rotation = 0.0
-
-function render() {
-
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-  var orthoDim = 10
-  mat4.identity(pMatrix)
-  mat4.perspective(
-    pMatrix, 45,
-    gl.drawingBufferWidth / gl.drawingBufferHeight,
-    0, 100)
-  // mat4.ortho(pMatrix, -orthoDim, orthoDim, -orthoDim, orthoDim, -1000, 10)
-
-  // set up model
-  mat4.identity(mvMatrix)
-  mat4.lookAt(mvMatrix,
-    eyeVec3,
-    [0, 0, 0],
-    [0, 1, 0])
-
-  // mat4.scale(mvMatrix, mvMatrix, [0.5, 1.0, 1.0])
-  // mat4.translate(mvMatrix, mvMatrix, [1, 0, 0])
-  // mat4.rotate(mvMatrix, mvMatrix, rotation * 0.5, [0, 1, 0])
-
-
-
-  // mat4.lookAt(mvMatrix,
-  //   [0, 0, 5],
-  //   [0, 0, 0],
-  //   [0, 1, 0])
-  // mat4.rotateY(mvMatrix, mvMatrix, rotation)
-
-  gl.uniformMatrix4fv(pMatrixUniform, false, pMatrix);
-  gl.uniformMatrix4fv(mvMatrixUniform, false, mvMatrix);
-
-  // draw
-  gl.drawArrays(gl.TRIANGLES, 0, numVertices);
-
-  // vec3.transformMat4(eyeVec3, eyeVec3, eyeRotMatrix)
-
-  rotation = (rotation + 0.05)
-  // setTimeout(render, 1000/60)
+var Projection = {
+  ORTHOGRAPHIC: 'orthographic',
+  PERSPECTIVE: 'perspective'
 }
 
-function start() {
-    gl = createContext(500, 500)
+function Sketch(w, h) {
 
-    // setup a GLSL program
-    program = createProgramFromScripts(gl, [
-      "hello-vertex-shader",
-      "hello-fragment-shader"
-    ]);
-    gl.useProgram(program);
+  this.width = w
+  this.height = h
+
+  this.gl = null
+
+  // Configurable properties
+  this.x = 0
+  this.y = 0
+  this.z = 0
+  this.sx = 1.0
+  this.sy = 1.0
+  this.sz = 1.0
+  this.rx = 0
+  this.ry = 0
+  this.rz = 0
+  this.projection = Projection.PERSPECTIVE
+
+  // Setup GUI
+  this.stats = new Stats()
+  this.stats.showPanel(0)
+  document.body.appendChild( this.stats.dom );
+
+  this.gui = new dat.GUI()
+  this.gui.add(this, 'x', -2, 2)
+  this.gui.add(this, 'y', -2, 2)
+  this.gui.add(this, 'z', -2, 2)
+  this.gui.add(this, 'sx', 0.5, 2)
+  this.gui.add(this, 'sy', 0.5, 2)
+  this.gui.add(this, 'sz', 0.5, 2)
+  this.gui.add(this, 'rx', -Math.PI, Math.PI)
+  this.gui.add(this, 'ry', -Math.PI, Math.PI)
+  this.gui.add(this, 'rz', -Math.PI, Math.PI)
+  this.gui.add(this, 'projection', _.map(Projection, function(val) { return val }))
+    .onChange(_.bind(this.setProjection, this))
+
+}
+_.extend(Sketch.prototype, {
+
+  start: function start() {
+    this.gl = createContext(this.width, this.height)
+    var gl = this.gl
+
+    this.initMatrices()
+    this.initShaders()
+    this.initMeshData()
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0)
 
-    // gl.enable(gl.DEPTH_TEST)
-    // gl.depthFunc(gl.LEQUAL)
-    // gl.cullFace(gl.FRONT)
-    // gl.frontFace(gl.CW);
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LESS)
 
-    // look up where the vertex and color data needs to go.
-    positionLocation = gl.getAttribLocation(program, "a_position");
-    colorLocation = gl.getAttribLocation(program, "a_color");
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-    // shader uniforms
-    pMatrixUniform = gl.getUniformLocation(program, "uPMatrix");
-    mvMatrixUniform = gl.getUniformLocation(program, "uMVMatrix");
+    this.tick()
+  },
 
-    eyeVec3 = vec3.fromValues(-2, 2, -2)
-    eyeRotMatrix = mat4.create()
-    mat4.identity(eyeRotMatrix)
+  tick: function tick(ts) {
+    this.stats.begin()
 
-    pMatrix = mat4.create()
-    mvMatrix = mat4.create()
+    this.update(ts)
+    this.render(ts)
 
-    vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    this.stats.end()
+    window.requestAnimationFrame(_.bind(this.tick, this))
+  },
+
+  update: function update(ts) {},
+
+  render: function render(ts) {
+    var gl = this.gl
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    // draw
+    this.drawUnitCube(
+      this.x, this.y, this.z,
+      this.sx,  this.sy,  this.sz,
+      this.rx,  this.ry,  this.rz)
+  },
+
+  // Internal methods
+
+  initMatrices: function initMatrices() {
+    this.camMatrix = mat4.create()
+    mat4.lookAt(this.camMatrix,
+      [5, 5, 5],
+      [0, 0, 0],
+      [0, 1, 0])
+
+    this.pMatrix = mat4.create()
+    this.setProjection(this.projection)
+  },
+
+  initShaders: function initShaders() {
+    var gl = this.gl
+
+    // setup a GLSL program
+    this.program = createProgramFromScripts(gl, [
+      "mvp-color-vertex-shader",
+      "varying-color-fragment-shader"
+    ]);
+  },
+
+  initMeshData: function initMeshData() {
+    var gl = this.gl
+
+    var vertexDim = 3
+    var vertices = [
+      -0.5,-0.5,-0.5, // triangle 1 : begin
+      -0.5,-0.5, 0.5,
+      -0.5, 0.5, 0.5, // triangle 1 : end
+       0.5, 0.5,-0.5, // triangle 2 : begin
+      -0.5,-0.5,-0.5,
+      -0.5, 0.5,-0.5, // triangle 2 : end
+
+       0.5,-0.5, 0.5,
+      -0.5,-0.5,-0.5,
+       0.5,-0.5,-0.5,
+       0.5, 0.5,-0.5,
+       0.5,-0.5,-0.5,
+      -0.5,-0.5,-0.5,
+
+      -0.5,-0.5,-0.5,
+      -0.5, 0.5, 0.5,
+      -0.5, 0.5,-0.5,
+       0.5,-0.5, 0.5,
+      -0.5,-0.5, 0.5,
+      -0.5,-0.5,-0.5,
+
+      -0.5, 0.5, 0.5,
+      -0.5,-0.5, 0.5,
+       0.5,-0.5, 0.5,
+       0.5, 0.5, 0.5,
+       0.5,-0.5,-0.5,
+       0.5, 0.5,-0.5,
+
+       0.5,-0.5,-0.5,
+       0.5, 0.5, 0.5,
+       0.5,-0.5, 0.5,
+       0.5, 0.5, 0.5,
+       0.5, 0.5,-0.5,
+      -0.5, 0.5,-0.5,
+
+       0.5, 0.5, 0.5,
+      -0.5, 0.5,-0.5,
+      -0.5, 0.5, 0.5,
+       0.5, 0.5, 0.5,
+      -0.5, 0.5, 0.5,
+       0.5,-0.5, 0.5
+    ]
+
+    this.numVertices = vertices.length / vertexDim
+
+    var colorDim = 4
+    var colors = []
+    for (var i = 0; i < this.numVertices; i++) {
+      colors.push(vertices[(i*3)] > 0 ? 1.0 : 0.0)
+      colors.push(vertices[(i*3)+1] > 0 ? 1.0 : 0.0)
+      colors.push(vertices[(i*3)+2] > 0 ? 1.0 : 0.0)
+      colors.push(1.0) // alpha
+    }
+    this.numColors = colors.length / colorDim
+
+    // Load data into buffers and link to shader attributes
+    this.vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, vertexDim, gl.FLOAT, false, 0, 0);
 
-    colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    var positionAttrLocation = gl.getAttribLocation(this.program, "a_position");
+    gl.enableVertexAttribArray(positionAttrLocation);
+    gl.vertexAttribPointer(positionAttrLocation, vertexDim, gl.FLOAT, false, 0, 0);
+
+    this.colorBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colorBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-    gl.enableVertexAttribArray(colorLocation);
-    gl.vertexAttribPointer(colorLocation, colorDim, gl.FLOAT, false, 0, 0);
 
-    render()
+    var colorAttrLocation = gl.getAttribLocation(this.program, "a_color");
+    gl.enableVertexAttribArray(colorAttrLocation);
+    gl.vertexAttribPointer(colorAttrLocation, colorDim, gl.FLOAT, false, 0, 0);
+  },
+
+  drawUnitCube: function drawRect(x, y, z, sx, sy, sz, rx, ry, rz) {
+
+    var gl = this.gl
+
+    var mvMatrix = mat4.create()
+
+    // set up model
+    // matrix operations are called in the reverse order
+    // you want them to occur in
+    // e.g. for any call on matrix <mat> applying transform <t>, you get
+    // <mat> * <t>
+    mat4.identity(mvMatrix)
+    mat4.translate(mvMatrix, mvMatrix, [x, y, z])
+    mat4.rotateX(mvMatrix, mvMatrix, rx)
+    mat4.rotateY(mvMatrix, mvMatrix, ry)
+    mat4.rotateZ(mvMatrix, mvMatrix, rz)
+    mat4.scale(mvMatrix, mvMatrix, [sx, sy, sz])
+
+    // link dynamic values to shader uniforms
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uPMatrix"),
+      false, this.pMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uCamMatrix"),
+      false, this.camMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uMVMatrix"),
+      false, mvMatrix)
+
+    // draw
+    gl.useProgram(this.program);
+    gl.drawArrays(gl.TRIANGLES, 0, this.numVertices);
+  },
+
+  // Setters
+
+  setProjection: function setProject(projection) {
+    this.projection = projection
+
+    mat4.identity(this.pMatrix)
+
+    switch(projection) {
+      case Projection.ORTHOGRAPHIC:
+
+        var orthoDim = 1
+        mat4.ortho(this.pMatrix, -orthoDim, orthoDim, -orthoDim, orthoDim, 0, 10)
+
+        break
+      case Projection.PERSPECTIVE:
+
+        mat4.perspective(
+          this.pMatrix, 45,
+          this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
+          1, 100)
+
+        break
+    }
   }
 
-  start()
+})
+
+window.onload = function() {
+  var sketch = new Sketch(500, 500)
+  sketch.start()
+}
 </script>
 {% endset %}
