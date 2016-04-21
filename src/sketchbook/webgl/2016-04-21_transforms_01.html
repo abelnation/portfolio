@@ -1,0 +1,115 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
+
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+{% endset %}
+
+{% set sketch_source %}
+<script type="text/javascript">
+</script>
+{% endset %}
+
+{% set sketch_source_other %}
+<script type="x-shader/x-vertex" id="mvp-vertex-shader">
+  attribute vec3 a_position;
+
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCamMatrix;
+  uniform mat4 uPMatrix;
+
+  void main() {
+     gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(a_position, 1);
+  }
+</script>
+<script type="x-shader/x-fragment" id="depth-fragment-shader">
+  uniform lowp vec4 uColor;
+
+  void main() {
+    gl_FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
+  }
+</script>
+{% endset %}
+
+{% set sketch_source_js %}
+<script type="text/javascript">
+
+function Sketch(w, h) {
+
+  this.width = w
+  this.height = h
+
+  this.paused = false
+  this.color = [ 255, 0, 0 ]
+
+  this.gl = null
+
+  this.stats = new Stats()
+  this.stats.showPanel(0)
+  document.body.appendChild( this.stats.dom );
+
+  this.gui = new dat.GUI()
+  this.gui.add(this, 'paused')
+    .onChange(_.bind(this.onPauseChanged, this))
+  this.gui.addColor(this, 'color')
+    .onChange(_.bind(this.onColorChanged, this))
+
+}
+_.extend(Sketch.prototype, {
+  start: function start() {
+    var gl = createContext(this.width, this.height)
+    this.gl = gl
+
+    gl.depthFunc(gl.LEQUAL)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    this.onColorChanged(this.color)
+
+    this.tick()
+  },
+
+  tick: function tick(ts) {
+    this.stats.begin()
+
+    this.update(ts)
+    this.render(ts)
+
+    this.stats.end()
+    if (!this.paused) {
+      window.requestAnimationFrame(_.bind(this.tick, this))
+    }
+  },
+
+  update: function update(ts) {
+
+  },
+
+  render: function render(ts) {
+    var gl = this.gl
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+  },
+
+  onPauseChanged: function onPauseChanged(isPaused) {
+    if (!isPaused) {
+      this.render()
+    }
+  },
+
+  onColorChanged: function onColorChanged(color) {
+    this.gl.clearColor(
+      color[0] / 255.0,
+      color[1] / 255.0,
+      color[2] / 255.0, 1.0)
+  }
+})
+
+window.onload = function() {
+  var sketch = new Sketch(500, 500)
+  sketch.start()
+}
+</script>
+{% endset %}

@@ -3,7 +3,7 @@
 {% set sketch_libs %}
 <script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>{% endset %}
 
-{% set sketch_source %}
+{% set sketch_source_other %}
 <script type="x-shader/x-vertex" id="hello-vertex-shader">
   attribute vec3 a_position;
   attribute vec4 a_color;
@@ -22,8 +22,9 @@
   }
 </script>
 {% endset %}
-{% set sketch_source_js %}
 
+{% set sketch_source_js %}
+<script type="text/javascript">
   var gl
 
   function start() {
@@ -75,5 +76,5 @@
   }
 
   start()
-
+</script>
 {% endset %}

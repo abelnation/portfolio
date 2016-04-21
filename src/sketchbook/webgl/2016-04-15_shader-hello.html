@@ -4,7 +4,7 @@
 <script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
 {% endset %}
 
-{% set sketch_source %}
+{% set sketch_source_other %}
 <script type="x-shader/x-vertex" id="hello-vertex-shader">
   attribute vec2 a_position;
   void main() {
@@ -16,6 +16,9 @@
     gl_FragColor = vec4(0,1,0,1); // green
   }
 </script>
+{% endset %}
+
+{% set sketch_source_js %}
 <script type="text/javascript">
   var gl
 
@@ -76,5 +79,3 @@
 start()
 </script>
 {% endset %}
-
-

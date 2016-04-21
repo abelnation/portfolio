@@ -1,0 +1,71 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
+{% endset %}
+
+{% set sketch_source_other %}{% endset %}
+{% set sketch_source_js %}
+<script type="text/javascript">
+function Sketch() {
+
+  this.paused = false
+  this.color = [ 255, 0, 0 ]
+
+  this.gl = null
+
+  this.stats = new Stats()
+  this.stats.showPanel(0)
+  document.body.appendChild( this.stats.dom );
+
+  this.gui = new dat.GUI()
+  this.gui.add(this, 'paused')
+    .onChange(_.bind(this.onPauseChanged, this))
+  this.gui.addColor(this, 'color')
+    .onChange(_.bind(this.onColorChanged, this))
+}
+_.extend(Sketch.prototype, {
+  start: function start() {
+    this.gl = createContext(500, 500)
+
+    this.onColorChanged(this.color)
+
+    this.render()
+  },
+
+  render: function render(ts) {
+    var gl = this.gl
+    this.stats.begin()
+
+    gl.clear(gl.COLOR_BUFFER_BIT)
+
+    this.stats.end()
+    if (!this.paused) {
+      window.requestAnimationFrame(_.bind(this.render, this))
+    }
+  },
+
+  onPauseChanged: function onPauseChanged(isPaused) {
+    if (!isPaused) {
+      this.render()
+    }
+  },
+
+  onColorChanged: function onColorChanged(color) {
+    this.gl.clearColor(
+      color[0] / 255.0,
+      color[1] / 255.0,
+      color[2] / 255.0, 1.0)
+  }
+})
+
+window.onload = function() {
+  var sketch = new Sketch()
+  sketch.start()
+}
+</script>
+{% endset %}

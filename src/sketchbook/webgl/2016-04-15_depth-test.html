@@ -1,0 +1,315 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
+{% endset %}
+
+{% set sketch_source_other %}
+<script type="x-shader/x-vertex" id="mvp-vertex-shader">
+  attribute vec3 a_position;
+
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCamMatrix;
+  uniform mat4 uPMatrix;
+
+  void main() {
+     gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(a_position, 1);
+  }
+</script>
+<script type="x-shader/x-fragment" id="depth-fragment-shader">
+  uniform lowp vec4 uColor;
+
+  void main() {
+    gl_FragColor = vec4(vec3(gl_FragCoord.z), 1.0);
+  }
+</script>
+<script type="x-shader/x-fragment" id="color-fragment-shader">
+  uniform lowp vec4 uColor;
+
+  void main() {
+    gl_FragColor = uColor;
+  }
+</script>
+{% endset %}
+
+{% set sketch_source_js %}
+<script type="text/javascript">
+
+var RenderMode = {
+  DEPTH: 'depth',
+  COLOR: 'color'
+}
+
+var DepthFunction = {
+  NEVER: 'NEVER',
+  LESS: 'LESS',
+  EQUAL: 'EQUAL',
+  LEQUAL: 'LEQUAL',
+  GREATER: 'GREATER',
+  NOTEQUAL: 'NOTEQUAL',
+  GEQUAL: 'GEQUAL',
+  ALWAYS: 'ALWAYS',
+}
+
+var Projection = {
+  ORTHOGRAPHIC: 'orthographic',
+  PERSPECTIVE: 'perspective'
+}
+
+function Sketch(w, h) {
+
+  this.width = w
+  this.height = h
+
+  this.gl = null
+
+  this.colors = _.times(100, _.bind(this.getRandomColor, this))
+
+  // Setup GUI
+  this.stats = new Stats()
+  this.stats.showPanel(0)
+  document.body.appendChild( this.stats.dom );
+
+  this.renderMode = RenderMode.DEPTH
+  this.projection = Projection.PERSPECTIVE
+  this.depthTest = true
+  this.depthFunc = DepthFunction.LESS
+  this.eyeRot = 0.0
+
+  this.gui = new dat.GUI()
+  this.gui.add(this, 'depthTest')
+    .onChange(_.bind(this.setDepthTestEnabled, this))
+  this.gui.add(this, 'renderMode', _.map(RenderMode, function(val) { return val }))
+    .onChange(_.bind(this.setRenderMode, this))
+  this.gui.add(this, 'depthFunc', _.map(DepthFunction, function(val) { return val }))
+    .onChange(_.bind(this.setDepthFunction, this))
+  this.gui.add(this, 'projection', _.map(Projection, function(val) { return val }))
+    .onChange(_.bind(this.setProjection, this))
+  this.gui.add(this, 'eyeRot', -Math.PI, Math.PI)
+    .onChange(_.bind(this.setEyeRot, this))
+
+}
+_.extend(Sketch.prototype, {
+
+  start: function start() {
+    this.gl = createContext(this.width, this.height)
+    var gl = this.gl
+
+    this.initMatrices()
+    this.initShaders()
+    this.initMeshData()
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+
+    gl.enable(gl.DEPTH_TEST)
+    this.setDepthFunction(this.depthFunc)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    this.tick()
+  },
+
+  tick: function tick(ts) {
+    this.stats.begin()
+
+    this.update(ts)
+    this.render(ts)
+
+    this.stats.end()
+    window.requestAnimationFrame(_.bind(this.tick, this))
+  },
+
+  update: function update(ts) {},
+
+  render: function render(ts) {
+    var gl = this.gl
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    var colorIdx = 0
+    for (var i = -5; i < 5; i++) {
+      for (var j = -5; j < 5; j++) {
+        this.drawRect(
+          j * -1.0, -0.5, i * -1.0,          // x, y, z
+          0.75, 0.75, this.colors[colorIdx]) // w, h
+
+        colorIdx++
+      }
+
+    }
+  },
+
+  // Internal methods
+
+  initMatrices: function initMatrices() {
+    this.camMatrix = mat4.create()
+    this.setEyeRot(this.eyeRot)
+
+    this.pMatrix = mat4.create()
+    this.setProjection(this.projection)
+  },
+
+  initShaders: function initShaders() {
+    var gl = this.gl
+
+    // setup a GLSL program
+    // setup a GLSL program
+    this.depthProgram = createProgramFromScripts(gl, [
+      "mvp-vertex-shader",
+      "depth-fragment-shader"
+    ]);
+    this.colorProgram = createProgramFromScripts(gl, [
+      "mvp-vertex-shader",
+      "color-fragment-shader"
+    ]);
+
+    this.setRenderMode(this.renderMode)
+  },
+
+  initMeshData: function initMeshData() {
+    var gl = this.gl
+    var vertexDim = 3
+    var rectVertices = [
+       0.0, 0.0, 0.0,
+       0.0, 1.0, 0.0,
+       1.0, 0.0, 0.0,
+       1.0, 0.0, 0.0,
+       0.0, 1.0, 0.0,
+       1.0, 1.0, 0.0,
+    ]
+
+    // init buffer of vertices
+    this.numVertices = rectVertices.length / vertexDim
+    this.vertexBuffer = this.gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rectVertices), gl.STATIC_DRAW);
+
+    // bind buffer to position in vertex array
+    _.each([this.colorProgram, this.depthProgram], function(program) {
+      var positionLocation = gl.getAttribLocation(program, "a_position");
+      gl.enableVertexAttribArray(positionLocation);
+      gl.vertexAttribPointer(positionLocation, vertexDim, gl.FLOAT, false, 0, 0);
+    })
+  },
+
+  drawRect: function drawRect(x, y, z, w, h, color) {
+
+    if (!color) {
+      color = [ Math.random(), Math.random(), Math.random(), 1.0 ]
+    }
+
+    var gl = this.gl
+
+    var mvMatrix = mat4.create()
+
+    // set up model
+    mat4.identity(mvMatrix)
+
+    mat4.translate(mvMatrix, mvMatrix, [x, y, z])
+    mat4.scale(mvMatrix, mvMatrix, [w, h, 0])
+
+    // link vertex buffer to shader attribute
+    // TODO: figure out when this need to be called ever after the first call
+    // gl.enableVertexAttribArray(this.positionLocation);
+
+    // link dynamic values to shader uniforms
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uPMatrix"),
+      false, this.pMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uCamMatrix"),
+      false, this.camMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uMVMatrix"),
+      false, mvMatrix)
+
+    gl.uniform4fv(
+      gl.getUniformLocation(this.program, "uColor"), color)
+
+    // draw
+    gl.drawArrays(gl.TRIANGLES, 0, this.numVertices);
+  },
+
+  getRandomColor: function getRandomColor() {
+    return [ Math.random(), Math.random(), Math.random(), 1.0 ]
+  },
+
+  // Setters
+
+  setDepthTestEnabled: function setDepthTestEnabled(isEnabled) {
+    this.depthTest = isEnabled
+    if (isEnabled) {
+      this.gl.enable(this.gl.DEPTH_TEST)
+    } else {
+      this.gl.disable(this.gl.DEPTH_TEST)
+    }
+  },
+
+  setRenderMode: function setRenderMode(renderMode) {
+    this.renderMode = renderMode
+    switch(renderMode) {
+      case RenderMode.DEPTH:
+        this.program = this.depthProgram
+        break
+      case RenderMode.COLOR:
+        this.program = this.colorProgram
+        break
+    }
+    this.gl.useProgram(this.program);
+  },
+
+  setProjection: function setProject(projection) {
+    this.projection = projection
+
+    mat4.identity(this.pMatrix)
+
+    switch(projection) {
+      case Projection.ORTHOGRAPHIC:
+
+        var orthoDim = 1
+        mat4.ortho(this.pMatrix, -orthoDim, orthoDim, -orthoDim, orthoDim, 0, 10)
+
+        break
+      case Projection.PERSPECTIVE:
+
+        mat4.perspective(
+          this.pMatrix, 45,
+          this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
+          1, 100)
+
+        break
+    }
+  },
+
+  setEyeRot: function setEyeRot(eyeRot) {
+    this.eyeRot = eyeRot
+
+    var eyeRotMat = mat4.create()
+    mat4.identity(eyeRotMat)
+    mat4.rotateY(eyeRotMat, eyeRotMat, this.eyeRot)
+
+    // var eyeVec3 = vec3.fromValues(0, 0, 10)
+    var eyeVec3 = vec3.fromValues(0, 1, 2)
+    vec3.transformMat4(eyeVec3, eyeVec3, eyeRotMat)
+
+    mat4.identity(this.camMatrix)
+    mat4.lookAt(this.camMatrix,
+      eyeVec3,
+      [0, 0, 0],
+      [0, 1, 0])
+  },
+
+  setDepthFunction: function setDepthFunction(depthFunc) {
+    this.gl.depthFunc(this.gl[depthFunc])
+  }
+
+})
+
+window.onload = function() {
+  var sketch = new Sketch(500, 500)
+  sketch.start()
+}
+</script>
+{% endset %}
