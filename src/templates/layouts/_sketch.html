@@ -1,11 +1,17 @@
 {% extends "_base.html" %}
 
+{# Remove skeleton css for sketches #}
+{% block base_css %}
+<link rel="stylesheet" href="/css/normalize.css" media="all">
+{% endblock %}
+
 {% block layout_css %}
 <!-- code syntax highlighting -->
 <!--<link class="codestyle" rel="stylesheet" href="/css/vendor/solarized-dark.min.css">-->
 <link class="codestyle" rel="stylesheet" href="/css/vendor/monokai-sublime.min.css">
 {% endblock %}
 
+{# Make sure we use syntax highlighting #}
 {% block layout_js %}
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.3.0/highlight.min.js"></script>
 <script type="text/javascript">
@@ -13,34 +19,32 @@
 </script>
 {% endblock %}
 
+{# Show source code in pre blocks #}
 {% block base_content %}
-{% if sketch_source_js %}
 
+{% if sketch_source_other %}
+{% markdown %}
+```
+{{ sketch_source_other | safe }}
+```
+{% endmarkdown %}
+{% endif %}
+
+{% if sketch_source_js %}
 {% markdown %}
 ```js
 {{ sketch_source_js | safe }}
 ```
 {% endmarkdown %}
-
-{% else %}
-
-{% markdown %}
-```js
-{{ sketch_source | safe }}
-```
-{% endmarkdown %}
-
 {% endif %}
+
 {% endblock %}
 
+{# Actual executed code #}
 {% block custom_js %}
 
 {{ sketch_libs | safe }}
-{{ sketch_source | safe }}
-{% if sketch_source_js %}
-<script type="text/javascript">
-  {{ sketch_source_js | safe }}
-</script>
-{% endif %}
+{{ sketch_source_other | safe }}
+{{ sketch_source_js | safe }}
 
 {% endblock %}

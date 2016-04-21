@@ -4,6 +4,10 @@
 {% if threejs %}<script type="text/javascript" src="/sketchbook/_lib/three.min.js"></script>{% endif %}
 {% if webgl %}
 <script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
+
 <script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
 {% endif %}
 {% if react %}<script type="text/javascript" src="/sketchbook/_lib/react.js"></script>{% endif %}
@@ -15,7 +19,29 @@
 </script>
 {% raw %}{% endset %}{% endraw %}
 
+{% raw %}{% set sketch_source_other %}{% endraw %}
+<script type="x-shader/x-vertex" id="mvp-vertex-shader">
+  attribute vec3 a_position;
+
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCamMatrix;
+  uniform mat4 uPMatrix;
+
+  void main() {
+     gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(a_position, 1);
+  }
+</script>
+<script type="x-shader/x-fragment" id="simple-color-fragment-shader">
+  uniform lowp vec4 uColor;
+  void main() {
+    gl_FragColor = uColor;
+  }
+</script>
+{% raw %}{% endset %}{% endraw %}
+
 {% raw %}{% set sketch_source_js %}{% endraw %}
+<script type="text/javascript">
 {% if threejs %}{% include "_threejs-starter.js" %}{% endif %}
 {% if webgl %}{% include "_webgl-starter.js" %}{% endif %}
+</script>
 {% raw %}{% endset %}{% endraw %}
