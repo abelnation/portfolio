@@ -1,0 +1,367 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
+
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+{% endset %}
+
+{% set sketch_source %}
+<script type="text/javascript">
+</script>
+{% endset %}
+
+{% set sketch_source_other %}
+<script type="x-shader/x-vertex" id="mvp-color-vertex-shader">
+  attribute vec3 a_position;
+  attribute vec4 a_color;
+
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCamMatrix;
+  uniform mat4 uPMatrix;
+
+  // outs
+  varying lowp vec4 vColor;
+
+  void main() {
+     gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(a_position, 1);
+     vColor = a_color;
+  }
+</script>
+<script type="x-shader/x-fragment" id="varying-color-fragment-shader">
+  varying lowp vec4 vColor;
+  void main() {
+    gl_FragColor = vColor;
+  }
+</script>
+{% endset %}
+
+{% set sketch_source_js %}
+<script type="text/javascript">
+
+function Sketch(w, h) {
+
+  this.gl = null
+  this.width = w
+  this.height = h
+
+  this.meshes = {
+    cube: {
+      vertices: [],
+      numVertices: 0,
+      colorSets: {
+        'rainbow': {},
+        'random': {}
+      }
+    },
+    pyramid: {
+      vertices: [],
+      numVertices: 0,
+      colorSets: {
+        'rainbow': {},
+        'random': {}
+      }
+    }
+  }
+
+  this.rotation = 0.0
+
+  // configurable properties
+  this.vertexSet = 'cube'
+  this.colorSet = 'rainbow'
+
+  // init gui
+  this.stats = new Stats()
+  this.stats.showPanel(0)
+  document.body.appendChild( this.stats.dom );
+
+  this.gui = new dat.GUI()
+  this.gui.add(this, 'vertexSet', [ 'cube', 'pyramid' ])
+    .onChange(_.bind(this.onObjectDataChanged, this))
+  this.gui.add(this, 'colorSet', [ 'rainbow', 'random' ])
+    .onChange(_.bind(this.onObjectDataChanged, this))
+
+}
+_.extend(Sketch.prototype, {
+  start: function start() {
+    var gl = createContext(this.width, this.height)
+    this.gl = gl
+
+    this.initMatrices()
+    this.initShaders()
+    this.initMeshData()
+
+    // trigger enabling of default vertex data
+    this.onObjectDataChanged()
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LESS)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    this.tick()
+  },
+
+  tick: function tick(ts) {
+    this.stats.begin()
+
+    this.update(ts)
+    this.render(ts)
+
+    this.stats.end()
+    if (!this.paused) {
+      window.requestAnimationFrame(_.bind(this.tick, this))
+    }
+  },
+
+  update: function update(ts) {
+    this.rotation += 0.01
+
+    var eyeVec = vec3.fromValues(-3, 3, 3)
+    var eyeRot = mat4.create()
+    mat4.rotateY(eyeRot, eyeRot, this.rotation)
+
+    vec3.transformMat4(eyeVec, eyeVec, eyeRot)
+
+    mat4.lookAt(this.camMatrix,
+      eyeVec,
+      [0, 0, 0],
+      [0, 1, 0])
+  },
+
+  render: function render(ts) {
+    var gl = this.gl
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    this.drawObject(0, 0, 0)
+  },
+
+  // Internal methods
+
+  drawObject: function drawObject(x, y, z) {
+    var gl = this.gl
+
+    var mvMatrix = mat4.create()
+
+    // set up model
+    // matrix operations are called in the reverse order
+    // you want them to occur in
+    // e.g. for any call on matrix <mat> applying transform <t>, you get
+    // <mat> * <t>
+    mat4.identity(mvMatrix)
+    mat4.translate(mvMatrix, mvMatrix, [x, y, z])
+
+    // link dynamic values to shader uniforms
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uPMatrix"),
+      false, this.pMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uCamMatrix"),
+      false, this.camMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uMVMatrix"),
+      false, mvMatrix)
+
+    var mesh = this.meshes[this.vertexSet]
+    var numVertices = mesh.numVertices
+
+    // draw
+    gl.drawArrays(gl.TRIANGLES, 0, numVertices)
+  },
+
+  initMatrices: function initMatrices() {
+    this.camMatrix = mat4.create()
+    mat4.lookAt(this.camMatrix,
+      [-3, 3, 3],
+      [0, 0, 0],
+      [0, 1, 0])
+
+    this.pMatrix = mat4.create()
+    mat4.identity(this.pMatrix)
+    mat4.perspective(
+      this.pMatrix, 45,
+      this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
+      1, 100)
+  },
+
+  initShaders: function initShaders() {
+    var gl = this.gl
+
+    // setup a GLSL program
+    this.program = createProgramFromScripts(gl, [
+      "mvp-color-vertex-shader",
+      "varying-color-fragment-shader"
+    ])
+    gl.useProgram(this.program)
+  },
+
+  initMeshData: function initMeshData() {
+    this.initCubeData()
+    this.initPyramidData()
+  },
+
+  initCubeData: function initCubeData() {
+    this.initMesh('cube', [
+      -0.5,-0.5,-0.5, // triangle 1 : begin
+      -0.5,-0.5, 0.5,
+      -0.5, 0.5, 0.5, // triangle 1 : end
+       0.5, 0.5,-0.5, // triangle 2 : begin
+      -0.5,-0.5,-0.5,
+      -0.5, 0.5,-0.5, // triangle 2 : end
+
+       0.5,-0.5, 0.5,
+      -0.5,-0.5,-0.5,
+       0.5,-0.5,-0.5,
+       0.5, 0.5,-0.5,
+       0.5,-0.5,-0.5,
+      -0.5,-0.5,-0.5,
+
+      -0.5,-0.5,-0.5,
+      -0.5, 0.5, 0.5,
+      -0.5, 0.5,-0.5,
+       0.5,-0.5, 0.5,
+      -0.5,-0.5, 0.5,
+      -0.5,-0.5,-0.5,
+
+      -0.5, 0.5, 0.5,
+      -0.5,-0.5, 0.5,
+       0.5,-0.5, 0.5,
+       0.5, 0.5, 0.5,
+       0.5,-0.5,-0.5,
+       0.5, 0.5,-0.5,
+
+       0.5,-0.5,-0.5,
+       0.5, 0.5, 0.5,
+       0.5,-0.5, 0.5,
+       0.5, 0.5, 0.5,
+       0.5, 0.5,-0.5,
+      -0.5, 0.5,-0.5,
+
+       0.5, 0.5, 0.5,
+      -0.5, 0.5,-0.5,
+      -0.5, 0.5, 0.5,
+       0.5, 0.5, 0.5,
+      -0.5, 0.5, 0.5,
+       0.5,-0.5, 0.5
+    ])
+  },
+
+  initPyramidData: function initPyramidData() {
+    this.initMesh('pyramid', [
+       0.5,-0.5, 0.5, // Base
+      -0.5,-0.5,-0.5,
+       0.5,-0.5,-0.5,
+       0.5,-0.5, 0.5,
+      -0.5,-0.5, 0.5,
+      -0.5,-0.5,-0.5,
+
+      -0.5,-0.5, 0.5, // front
+       0.0, 0.5, 0.0,
+       0.5,-0.5, 0.5,
+
+      -0.5,-0.5,-0.5, // left
+       0.0, 0.5, 0.0,
+      -0.5,-0.5, 0.5,
+
+       0.5,-0.5,-0.5, // back
+       0.0, 0.5, 0.0,
+      -0.5,-0.5,-0.5,
+
+       0.5,-0.5, 0.5, // right
+       0.0, 0.5, 0.0,
+       0.5,-0.5,-0.5
+    ])
+  },
+
+  initMesh(meshName, vertices) {
+    var gl = this.gl
+
+    this.meshes[meshName] = {}
+    this.meshes[meshName].colorSets = {
+      'rainbow': {},
+      'random': {},
+    }
+
+    var meshData = this.meshes[meshName]
+
+    // Init mesh vertex data
+    var vertexDim = 3
+    meshData.vertices = vertices
+
+    meshData.numVertices = vertices.length / vertexDim
+
+    var vertexBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(meshData.vertices), gl.STATIC_DRAW)
+    meshData.vertexBuffer = vertexBuffer
+
+    // Color mesh algorithmically
+
+    // Init rainbow colorset
+    var colorDim = 4
+    var rainbowColors = []
+    for (var i = 0; i < meshData.numVertices; i++) {
+      rainbowColors.push(vertices[(i*3)] >= 0 ? 1.0 : 0.0)
+      rainbowColors.push(vertices[(i*3)+1] >= 0 ? 1.0 : 0.0)
+      rainbowColors.push(vertices[(i*3)+2] >= 0 ? 1.0 : 0.0)
+      rainbowColors.push(1.0) // alpha
+    }
+    meshData.colorSets.rainbow.vertices = rainbowColors
+
+    var rainbowBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, rainbowBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rainbowColors), gl.STATIC_DRAW);
+    meshData.colorSets.rainbow.vertexBuffer = rainbowBuffer
+
+    // Init random colorset
+    var randomColors = []
+    for (var i = 0; i < meshData.numVertices; i++) {
+      randomColors.push(Math.random())
+      randomColors.push(Math.random())
+      randomColors.push(Math.random())
+      randomColors.push(1.0) // alpha
+    }
+    meshData.colorSets.random.vertices = randomColors
+
+    var randomBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, randomBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(randomColors), gl.STATIC_DRAW);
+    meshData.colorSets.random.vertexBuffer = randomBuffer
+  },
+
+  // Gui Callbacks
+
+  onObjectDataChanged: function onObjectDataChanged() {
+    var gl = this.gl
+
+    var mesh = this.meshes[this.vertexSet]
+    var numVertices = mesh.numVertices
+
+    var vertexBuffer = mesh.vertexBuffer
+    var colorBuffer = mesh.colorSets[this.colorSet].vertexBuffer
+
+    console.log("numvertices: " + mesh.vertices.length / 3)
+    console.log("numcolors:   " + mesh.colorSets[this.colorSet].vertices.length / 4)
+
+    var positionAttr = gl.getAttribLocation(this.program, "a_position");
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.enableVertexAttribArray(positionAttr);
+    gl.vertexAttribPointer(positionAttr, 3, gl.FLOAT, false, 0, 0);
+
+    var colorAttr = gl.getAttribLocation(this.program, "a_color");
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.enableVertexAttribArray(colorAttr);
+    gl.vertexAttribPointer(colorAttr, 4, gl.FLOAT, false, 0, 0);
+  }
+})
+
+window.onload = function() {
+  var sketch = new Sketch(500, 500)
+  sketch.start()
+}
+</script>
+{% endset %}
