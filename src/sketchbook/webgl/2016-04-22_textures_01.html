@@ -1,0 +1,378 @@
+{% extends "_sketch.html" %}
+
+{% set sketch_libs %}
+<script type="text/javascript" src="/sketchbook/_lib/bluebird.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/gl-matrix-min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/lodash.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/stats.min.js"></script>
+<script type="text/javascript" src="/sketchbook/_lib/dat.gui.min.js"></script>
+
+<script type="text/javascript" src="/sketchbook/_lib/webgl.js"></script>
+{% endset %}
+
+{% set sketch_source %}
+<script type="text/javascript">
+</script>
+{% endset %}
+
+{% set sketch_source_other %}
+<script type="x-shader/x-vertex" id="mvp-2d-texture-vertex-shader">
+  attribute vec3 aPosition;
+  attribute vec2 aTextureCoord;
+
+  uniform mat4 uMVMatrix;
+  uniform mat4 uCamMatrix;
+  uniform mat4 uPMatrix;
+
+  // outputs
+  varying highp vec2 vTextureCoord;
+
+  void main() {
+     gl_Position = uPMatrix * uCamMatrix * uMVMatrix * vec4(aPosition, 1);
+     vTextureCoord = aTextureCoord;
+  }
+</script>
+<script type="x-shader/x-fragment" id="2d-texture-fragment-shader">
+  varying highp vec2 vTextureCoord;
+
+  uniform sampler2D uTexSampler;
+
+  void main() {
+    gl_FragColor = texture2D(uTexSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+  }
+</script>
+{% endset %}
+
+{% set sketch_source_js %}
+<script type="text/javascript">
+
+function Sketch(w, h) {
+
+  this.gl = null
+  this.width = w
+  this.height = h
+
+  this.crateNames = _.map([0, 1, 2], function(x) { return 'crate' + x })
+
+  this.textures = {}
+  this.rotation = 0.0
+
+  // configurable properties
+  this.dist = 3
+  this.crate = this.crateNames[0]
+
+  // init gui
+  this.stats = new Stats()
+  this.stats.showPanel(0)
+  document.body.appendChild( this.stats.dom );
+
+  this.gui = new dat.GUI()
+  this.gui.add(this, 'crate', this.crateNames)
+    .onChange(_.bind(this.onTextureChanged, this))
+
+  this.gui.add(this, 'dist', 0.5, 10.0)
+
+}
+_.extend(Sketch.prototype, {
+  start: function start() {
+    var self = this
+    var gl = createContext(this.width, this.height)
+    this.gl = gl
+
+    this.initShaders()
+    this.initMeshData()
+    this.initMatrices()
+
+    this.minFilterMode = gl.LINEAR
+    this.magFilterMode = gl.LINEAR
+
+    var filterModes = {
+      linear: gl.LINEAR,
+      nearest: gl.NEAREST,
+      linear_mipmap_linear: gl.LINEAR_MIPMAP_LINEAR,
+      nearest_mipmap_nearest: gl.NEAREST_MIPMAP_NEAREST,
+    }
+
+    this.gui.add(this, 'minFilterMode', filterModes)
+      .onChange(_.bind(this.onFilterModeChanged, this))
+    this.gui.add(this, 'magFilterMode', filterModes)
+      .onChange(_.bind(this.onFilterModeChanged, this))
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0)
+
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
+
+    gl.enable(gl.CULL_FACE)
+    gl.cullFace(gl.BACK)
+    gl.frontFace(gl.CW)
+
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    var textureLoadPromises = _.map(this.crateNames, function(crateName) {
+      var textureUrl = 'img/textures/crates/' + crateName + '/' + crateName + '_diffuse.png'
+      return self.loadImageAsync(crateName, textureUrl)
+    })
+
+    // Wait for textures to load before starting rendering
+    Promise.all(textureLoadPromises).then(function(textures) {
+      self.textures = _.reduce(textures, function(result, textureObject) {
+        result[textureObject.name] = textureObject.texture
+        return result
+      }, {})
+    })
+    .then(function() {
+      // start rendering
+      setTimeout(function() { self.tick() })
+    })
+    .catch(function(err) {
+      console.log('error loading textures: ' + err)
+      throw err
+    })
+  },
+
+  tick: function tick(ts) {
+    this.stats.begin()
+
+    this.update(ts)
+    this.render(ts)
+
+    this.stats.end()
+    if (!this.paused) {
+      window.requestAnimationFrame(_.bind(this.tick, this))
+    }
+  },
+
+  update: function update(ts) {
+    this.rotation += 0.01
+
+    var eyeVec = vec3.fromValues(this.dist, this.dist, this.dist)
+    var eyeRot = mat4.create()
+    mat4.rotateY(eyeRot, eyeRot, this.rotation)
+
+    vec3.transformMat4(eyeVec, eyeVec, eyeRot)
+
+    mat4.lookAt(this.camMatrix,
+      eyeVec,
+      [0, 0, 0],
+      [0, 1, 0])
+  },
+
+  render: function render(ts) {
+    var gl = this.gl
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    this.drawCube(0, 0, 0)
+  },
+
+  // Internal Methods
+
+  drawCube: function drawCube(x, y, z) {
+    var gl = this.gl
+
+    // activate shader program
+    gl.useProgram(this.program);
+
+    var mvMatrix = mat4.create()
+
+    // set up model
+    // matrix operations are called in the reverse order
+    // you want them to occur in
+    // e.g. for any call on matrix <mat> applying transform <t>, you get
+    // <mat> * <t>
+    mat4.identity(mvMatrix)
+    mat4.translate(mvMatrix, mvMatrix, [x, y, z])
+
+    // link dynamic values to shader uniforms
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uPMatrix"),
+      false, this.pMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uCamMatrix"),
+      false, this.camMatrix)
+    gl.uniformMatrix4fv(
+      gl.getUniformLocation(this.program, "uMVMatrix"),
+      false, mvMatrix)
+
+    // Bind texture to first texture register
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures[this.crate]);
+
+    // TODO: figure out why we pass "0" as the value here
+    gl.uniform1i(gl.getUniformLocation(this.program, "uTexSampler"), 0);
+
+    // draw
+    gl.drawArrays(gl.TRIANGLES, 0, this.numVertices);
+  },
+
+  // returns a promise
+  loadImageAsync: function loadImage(textureName, imageUrl, options) {
+    var self = this
+    var gl = this.gl
+
+    if (!options) { options = {} }
+
+    return new Promise(function (resolve, reject) {
+      var texture = gl.createTexture()
+      var img = new Image()
+      img.onload = function() {
+        // activate texture to be returned
+        gl.bindTexture(gl.TEXTURE_2D, texture)
+
+        // load data from image into buffer
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img)
+
+        gl.generateMipmap(gl.TEXTURE_2D)
+
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, self.magFilterMode)
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, self.minFilterMode)
+
+        // deactive the texture
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        resolve({
+          name: textureName,
+          texture: texture
+        })
+      }
+      img.onerror = function() {
+        reject(new Error('unable to load image: ' + imageUrl))
+      }
+
+      // start loading the texture
+      img.src = imageUrl
+    })
+  },
+
+  initMatrices: function initMatrices() {
+    this.camMatrix = mat4.create()
+    mat4.lookAt(this.camMatrix,
+      [this.dist, this.dist, this.dist],
+      [0, 0, 0],
+      [0, 1, 0])
+
+    this.pMatrix = mat4.create()
+    this.pMatrix = mat4.create()
+    mat4.identity(this.pMatrix)
+    mat4.perspective(
+      this.pMatrix, 45,
+      this.gl.drawingBufferWidth / this.gl.drawingBufferHeight,
+      1, 100)
+  },
+
+  initShaders: function initShaders() {
+    var gl = this.gl
+
+    // setup a GLSL program
+    this.program = createProgramFromScripts(gl, [
+      "mvp-2d-texture-vertex-shader",
+      "2d-texture-fragment-shader"
+    ]);
+  },
+
+  initMeshData: function initMeshData() {
+    var gl = this.gl
+
+    var vertices = []
+    var textureCoordinates = []
+
+    var identityQuat = quat.create()
+
+    var vertexDim = 3
+    var textureDim = 2
+
+    // front face vertices & texture coordinates
+    // use to generate the rest of the faces
+
+    function roundVec(vec, numDecimalPlaces) {
+      var exp = Math.pow(10, numDecimalPlaces)
+
+      for (var key in vec) {
+        vec[key] = Math.round(vec[key] * exp) / exp
+      }
+      return vec
+    }
+
+    // Note, these face vertices are specified in clock-wise order,
+    // so we need to specify gl.CW in as front-facing when we initialize
+    // our gl context
+    var faceVertices = [
+      { p: vec3.fromValues(-0.5, -0.5, 0.5), t: vec2.fromValues(0, 0) },
+      { p: vec3.fromValues(-0.5,  0.5, 0.5), t: vec2.fromValues(0, 1) },
+      { p: vec3.fromValues( 0.5, -0.5, 0.5), t: vec2.fromValues(1, 0) },
+
+      { p: vec3.fromValues( 0.5, -0.5, 0.5), t: vec2.fromValues(1, 0) },
+      { p: vec3.fromValues(-0.5,  0.5, 0.5), t: vec2.fromValues(0, 1) },
+      { p: vec3.fromValues( 0.5,  0.5, 0.5), t: vec2.fromValues(1, 1) },
+    ]
+    var faceTransformQuats = [
+      identityQuat, // front
+      quat.rotateY(quat.create(), identityQuat,  Math.PI), // back
+      quat.rotateY(quat.create(), identityQuat,  Math.PI / 2.0), // right
+      quat.rotateY(quat.create(), identityQuat, -Math.PI / 2.0), // left
+      quat.rotateX(quat.create(), identityQuat,  Math.PI / 2.0), // top
+      quat.rotateX(quat.create(), identityQuat, -Math.PI / 2.0), // top
+    ]
+
+    for (var i = 0; i < faceTransformQuats.length; i++) {
+      var rot = faceTransformQuats[i]
+      for (var j = 0; j < faceVertices.length; j++) {
+        var p = faceVertices[j].p
+        var tex = faceVertices[j].t
+
+        var faceP = vec3.transformQuat(vec3.create(), p, rot)
+        roundVec(faceP, 1)
+
+        vertices.push(faceP[0], faceP[1], faceP[2])
+        textureCoordinates.push(tex[0], tex[1])
+      }
+    }
+
+    this.numVertices = faceVertices.length * faceTransformQuats.length
+
+    // Load data into buffers and link to shader attributes
+    this.vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    var positionAttribute = gl.getAttribLocation(this.program, "aPosition");
+    gl.enableVertexAttribArray(positionAttribute);
+    gl.vertexAttribPointer(positionAttribute, vertexDim, gl.FLOAT, false, 0, 0);
+
+    this.textureCoordsBuffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.textureCoordsBuffer)
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW)
+
+    var textureCoordAttribute = gl.getAttribLocation(this.program, "aTextureCoord");
+    gl.enableVertexAttribArray(textureCoordAttribute);
+    gl.vertexAttribPointer(textureCoordAttribute, textureDim, gl.FLOAT, false, 0, 0);
+  },
+
+  // GUI Callbacks
+
+  onTextureChanged: function onTextureChanged(textureName) {},
+
+  onFilterModeChanged: function onFilterModeChanged() {
+    var gl = this.gl
+    for (var name in this.textures) {
+      console.log(name)
+      var tex = this.textures[name]
+      console.log(tex)
+      gl.bindTexture(gl.TEXTURE_2D, tex)
+
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.minFilterMode)
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.magFilterMode)
+
+      // regenerate mipmaps using new settings
+      // gl.generateMipmap(gl.TEXTURE_2D)
+
+      gl.bindTexture(gl.TEXTURE_2D, null);
+    }
+  }
+})
+
+window.onload = function() {
+  var sketch = new Sketch(500, 500)
+  sketch.start()
+}
+</script>
+{% endset %}

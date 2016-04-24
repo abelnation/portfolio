@@ -196,6 +196,7 @@ _.extend(Sketch.prototype, {
       "mvp-color-vertex-shader",
       "varying-color-fragment-shader"
     ])
+
     gl.useProgram(this.program)
   },
 
@@ -343,9 +344,6 @@ _.extend(Sketch.prototype, {
 
     var vertexBuffer = mesh.vertexBuffer
     var colorBuffer = mesh.colorSets[this.colorSet].vertexBuffer
-
-    console.log("numvertices: " + mesh.vertices.length / 3)
-    console.log("numcolors:   " + mesh.colorSets[this.colorSet].vertices.length / 4)
 
     var positionAttr = gl.getAttribLocation(this.program, "a_position");
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
